@@ -1,0 +1,20 @@
+{% set urlSplit = block.url|split('https://www.youtube.com/watch?v=') %}
+{% if urlSplit[1] is not defined %}
+    {% set urlSplit = block.url|split('https://youtu.be/') %}
+{% endif %}
+
+{% if urlSplit[1] is not defined %}
+    <div class="text-center mt-3 mb-3 text-danger">
+        <p>Impossible d'intégrer l'URL de la vidéo YouTube <em>{{ block.url }}</em>.</p>
+        <p>Veuillez-vous référer à la documentation ou contactez l'administrateur du site.</p>
+    </div>
+{% else %}
+    {% set videoId = urlSplit[1] %}
+
+    <div class="text-center mt-3 mb-3">
+        <iframe width="560" height="315" src="https://www.youtube-nocookie.com/embed/{{ videoId }}"
+                title="YouTube video player" frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen></iframe>
+    </div>
+{% endif %}

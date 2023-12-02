@@ -1,0 +1,28 @@
+{% if block.size == 'small' %}
+    {% set tracklist = '' %}
+    {% set cssSize = 'width: 100%; height: 42px;' %}
+    {% set playerSize = 'small' %}
+    {% set artworkSize = '' %}
+{% elseif block.size == 'large_large-artwork' %}
+    {% set tracklist = '/tracklist=false' %}
+    {% set cssSize = 'width: 350px; height: 442px;' %}
+    {% set playerSize = 'large' %}
+    {% set artworkSize = '' %}
+{% else %}
+    {% set tracklist = '/tracklist=false' %}
+    {% set cssSize = 'width: 100%; height: 120px;' %}
+    {% set playerSize = 'large' %}
+    {% set artworkSize = '/artwork=small' %}
+{% endif %}
+
+{% set type = 'track' %}
+{% if block.type is defined %}
+    {% set type = block.type %}
+{% endif %}
+
+<div class="text-center bandcamp-player mt-3 mb-3">
+    <iframe style="border: 0; {{ cssSize }}"
+            src="https://bandcamp.com/EmbeddedPlayer/{{ type }}={{ block.id }}/size={{ playerSize }}/bgcol={{ block.theme }}/linkcol=0687f5{{ tracklist }}{{ artworkSize }}/transparent=true/"
+            seamless>
+    </iframe>
+</div>

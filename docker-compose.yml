@@ -1,0 +1,24 @@
+services:
+  # Development server — hot-reload Vite + PHP preview at localhost:3000
+  editor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/vendor
+
+  # CI — build + unit tests + E2E Cypress tests
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/vendor
+    command: sh -c "npm run build && npm test"

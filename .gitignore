@@ -1,2 +1,11 @@
 node_modules
+.DS_Store
+package-lock.json
+dist
+dist-ssr
+*.local
+stats.html
+cypress/videos
+cypress/screenshots
 .idea
+.claude/settings.local.json

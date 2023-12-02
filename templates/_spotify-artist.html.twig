@@ -1,0 +1,9 @@
+{% set artistId = (block.url|split('/artist/'))[1] %}
+{% set artistId = (artistId|split('?'))[0] %}
+
+<div class="text-center mt-3 mb-3">
+    <iframe style="border-radius:12px"
+            src="https://open.spotify.com/embed/artist/{{ artistId }}?theme={{ block.theme }}" width="100%"
+            height="{{ block.size }}" frameBorder="0" allowfullscreen=""
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+</div>
