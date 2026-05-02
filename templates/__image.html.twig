@@ -1,0 +1,27 @@
+<a href="{{ block.image }}"
+   target="_blank"
+   title="{{ block.alt }}"
+   data-lightbox="gallery"
+   class="{% if gallery is defined and preview is defined and not preview %}masonry-item{% else %}d-block mb-4 h-100{% endif %}"
+>
+    {% set imageUrl = block.image %}
+
+    {% if 'metalsoundmedia.com' in block.image or 'msm.loc' in block.image %}
+        {% if gallery is defined %}
+            {% set imageUrl = cdn(block.image, {w: 500}) %}
+        {% else %}
+            {% set imageUrl = cdn(block.image, {w: 1000}) %}
+        {% endif %}
+    {% endif %}
+    <img src="{{ imageUrl }}"
+         class="img-thumbnail rounded m-auto"
+         alt="{{ block.alt }}"
+         loading="lazy"
+         {% if gallery is defined and preview is defined and not preview %}
+             width="200"
+             height="{{ get_height(block.image, 200) }}"
+         {% else %}
+             width="500"
+         {% endif %}
+    >
+</a>

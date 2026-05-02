@@ -1,0 +1,14 @@
+<div class="mt-3 mb-3 {% if preview is defined and preview %}row d-flex justify-content-center{% endif %} masonry"
+     id="masonry_{{ random(100, 10000) }}"
+     data-width="200"
+>
+    {% for i, image in block.images %}
+        {% if preview is defined and preview %}
+            <div class="col-lg-3 col-md-4 col-6">
+                {{ include('visual-editor/article/__image.html.twig', {block: image, preview: preview, gallery: true}) }}
+            </div>
+        {% else %}
+            {{ include('visual-editor/article/__image.html.twig', {block: image, preview: preview, gallery: true}) }}
+        {% endif %}
+    {% endfor %}
+</div>

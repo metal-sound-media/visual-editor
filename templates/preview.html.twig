@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        {% block stylesheets %}
+            <link rel="stylesheet" href="{{ asset('bootstrap/styles/bootstrap.css') }}">
+            <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+        {% endblock %}
+        <style>
+            /* Désactive le header/footer pour l'aperçu — affiche uniquement le corps de l'article */
+            body { background: var(--msm-bg); }
+        </style>
+    </head>
+    <body>
+
+        <div class="container-xl py-4">
+
+            {# En-tête de prévisualisation #}
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3" style="border-bottom: 1px solid var(--msm-line);">
+                <span class="msm-chip msm-chip--accent">Aperçu éditeur</span>
+                <span class="eyebrow">Prévisualisation du rendu final</span>
+            </div>
+
+            <article>
+                {# Header article #}
+                <header class="py-4 mb-4">
+                    <twig:PageIntro title="Titre de l'article en cours d'édition" containerless splitOnDash noPadding>
+                        <twig:block name="header">
+                            <div class="crumbs mb-3">
+                                <span>Accueil</span>
+                                <span class="sep">/</span>
+                                <span>Articles</span>
+                                <span class="sep">/</span>
+                                <span>Catégorie</span>
+                                <span class="sep">/</span>
+                                <span>Titre de l'article en cours d'édition</span>
+                            </div>
+                            <div class="d-flex gap-3 align-items-center mb-4 flex-wrap">
+                                <span class="msm-chip msm-chip--accent">Catégorie 1</span>
+                                <span class="msm-chip">Catégorie 2</span>
+                                <span class="msm-chip">Catégorie 3</span>
+                            </div>
+                        </twig:block>
+                        <twig:block name="description">
+                            <p class="lede text-pretty mt-4 mt-lg-0">
+                                Accroche de l'article — résumé ou introduction qui donne envie de lire la suite.
+                            </p>
+                        </twig:block>
+                    </twig:PageIntro>
+
+                    <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mt-4 pt-3"
+                         style="border-top: 1px solid var(--msm-line);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div style="width:48px; height:48px; border-radius:50%; background:var(--msm-bg-elev-2);
+                                        display:flex; align-items:center; justify-content:center;
+                                        font-family:var(--msm-font-display); font-size:18px;">AU</div>
+                            <div>
+                                <div style="font-weight:600;">Auteur</div>
+                                <div class="font-mono text-mute" style="font-size:11px; letter-spacing:.12em; text-transform:uppercase;">Rédacteur</div>
+                            </div>
+                        </div>
+                        <div class="font-mono text-mute" style="font-size:11px; letter-spacing:.14em; text-transform:uppercase;">
+                            Publié <span class="text-ink">{{ 'now'|date('d M. Y') }}</span>
+                        </div>
+                    </div>
+                </header>
+
+                {# Image principale placeholder #}
+                <div class="mb-5">
+                    <div class="placeholder-img" style="aspect-ratio:21/9; border-radius:var(--msm-radius);">
+                        <span class="ph-label">Image principale de l'article</span>
+                    </div>
+                </div>
+
+                {# Corps de l'article — contenu de l'éditeur visuel #}
+                <div class="row gx-5">
+                    <aside class="col-lg-3 d-none d-lg-block">
+                        <nav class="msm-toc msm-toc-preview" data-toc style="position:sticky; top:96px;">
+                            <div class="toc-title">Sommaire</div>
+                            <ol>
+                                <li><a href="#titre-1">Titre 1</a></li>
+                                <li><a href="#titre-2">Titre 2</a></li>
+                                <li><a href="#titre-3">Titre 3</a></li>
+                            </ol>
+                        </nav>
+                    </aside>
+
+                    <div class="col-lg-9">
+                        <div class="msm-article-body" data-article-body id="ve-components">
+                            {{ include('visual-editor/article/_blocks.html.twig', blocks) }}
+                        </div>
+                    </div>
+                </div>
+            </article>
+        </div>
+
+        <script type="text/javascript" src="{{ asset('msm.js') }}"></script>
+    </body>
+</html>

@@ -1,0 +1,14 @@
+{% set trackId = (block.url|split('/track/'))[1] %}
+{% set trackId = (trackId|split('/u'))[0] %}
+
+<div class="text-center mt-3 mb-3">
+    <iframe src="https://embed.tidal.com/tracks/{{ trackId }}"
+            width="500"
+            height="120"
+            allow="encrypted-media; fullscreen; clipboard-write https://embed.tidal.com; web-share"
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            style="color-scheme: light dark"
+            title="TIDAL Embed Player"
+            loading="lazy"
+    ></iframe>
+</div>

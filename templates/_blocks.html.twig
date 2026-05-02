@@ -1,0 +1,7 @@
+{% if preview is not defined %}
+    {% set preview = false %}
+{% endif %}
+
+{% for block in blocks %}
+    {{ include('visual-editor/article/_' ~ block._name ~ '.html.twig', block) }}
+{% endfor %}
