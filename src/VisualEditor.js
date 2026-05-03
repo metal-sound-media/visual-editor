@@ -25,7 +25,9 @@ const defaultDevices = [
   { name: 'Desktop', width: '100%', height: '100%', icon: 'desktop' },
 ]
 
-// Module-level registries shared across all instances
+// Module-level registries shared across ALL editor instances on the page.
+// This means components/templates/buttons registered once are available to
+// every <visual-editor> element, regardless of when it is mounted.
 const _components = {}
 const _templates = []
 const _actions = []
@@ -43,6 +45,8 @@ export class VisualEditor {
     }
   }
 
+  // `label` defaults to 'title' so the block heading shows definition.title
+  // unless the caller explicitly maps a different field name.
   registerComponent(name, definition) {
     _components[name] = { label: 'title', ...definition }
   }
@@ -74,6 +78,7 @@ export class VisualEditor {
 
       get value() {
         if (this._store) return this._store.getValue()
+        // Before mount the store doesn't exist yet; fall back to the attribute.
         return this.getAttribute('value') ?? '[]'
       }
 
@@ -81,6 +86,17 @@ export class VisualEditor {
         return this._store ? this._store.get().data : []
       }
 
+      /**
+       * The setter accepts three shapes so callers can use whichever is most
+       * convenient:
+       *   - string  → JSON to parse (same format as the `value` attribute)
+       *   - function → updater `(currentArray) => newArray`, useful for
+       *               merging or patching data without reading it first
+       *   - array/object → raw data that is indexified and set directly
+       *
+       * If called before the element is connected (no store yet), the value
+       * is written to the attribute so it gets picked up at mount time.
+       */
       set value(v) {
         if (!this._store) {
           if (!v) {
@@ -114,16 +130,25 @@ export class VisualEditor {
 
       attributeChangedCallback(name, oldValue, newValue) {
         if (!this._store) return
+        // Attribute changes that arrive before mount are ignored here because
+        // `_mount()` reads the attributes directly when it runs.
         if (name === 'value' && newValue !== null) {
           this._store.setDataFromOutside(this._parseValue(newValue))
           return
         }
         if (name === 'hidden') {
+          // `hidden` only toggles visibility; it never rebuilds the store.
           this._updateVisibility()
           return
         }
       }
 
+      /**
+       * Parse a JSON string into the internal block array.
+       * `fillDefaults` is called per block so that any fields added to a
+       * component definition *after* data was saved still receive their
+       * default values instead of being undefined.
+       */
       _parseValue(valueStr) {
         if (!valueStr) return []
         try {
@@ -245,6 +270,15 @@ export class VisualEditor {
         this._layoutEl.style.display = isHidden ? 'none' : ''
       }
 
+      /**
+       * Attach a 6 px invisible drag handle to the right edge of the sidebar.
+       * On drag, the pixel delta is converted to a viewport-width percentage
+       * so the sidebar width stays proportional if the window is later resized.
+       * The resulting vw value is both persisted to localStorage (via
+       * setSidebarWidth) and applied immediately as the `--ve-sidebar` CSS
+       * variable so the layout updates on every mouse-move frame.
+       * `e.preventDefault()` on mousedown prevents text selection while dragging.
+       */
       _createResizeBar(sidebarEl) {
         const bar = document.createElement('div')
         bar.className = 've-resize-bar'
@@ -257,6 +291,8 @@ export class VisualEditor {
         const onMouseMove = (e) => {
           const diff = e.clientX - startX
           const newWidth = startWidth + diff
+          // Convert px to vw so the sidebar stays the same fraction of the
+          // viewport when the window is resized.
           const vwWidth = (newWidth / window.innerWidth) * 100
           this._store.setSidebarWidth(vwWidth)
           this._layoutEl.style.setProperty('--ve-sidebar', `${vwWidth}vw`)
@@ -269,6 +305,7 @@ export class VisualEditor {
 
         bar.addEventListener('mousedown', (e) => {
           startX = e.clientX
+          // Read the rendered pixel width at drag start as the baseline.
           startWidth = parseFloat(getComputedStyle(sidebarEl).width)
           document.addEventListener('mousemove', onMouseMove)
           document.addEventListener('mouseup', onMouseUp)

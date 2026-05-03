@@ -36,7 +36,8 @@ function mount(container, value, onChange, options) {
   }
 
   function fireChange() {
-    // Strip internal UI flags before sending to store
+    // Strip _autoOpen before sending to the store — it is a local UI hint
+    // (auto-expand on add) and must never leak into the serialized output.
     onChange(items.map(({ _autoOpen, ...item }) => item))
   }
 
@@ -142,12 +143,15 @@ function mount(container, value, onChange, options) {
 
     function toggleCollapse() {
       if (fieldsEl.style.display !== 'none') {
-        // Close: remove fields from DOM so hidden labels don't pollute queries
+        // Closing: destroy the mounted fields entirely rather than just hiding
+        // them with CSS. Hidden labels and inputs would otherwise still be
+        // found by document.querySelector, which breaks Cypress assertions
+        // like `should('not.exist')` and can confuse form autofill.
         fieldsEl.style.display = 'none'
         fieldsEl.innerHTML = ''
         fieldInstance = null
       } else {
-        // Open: re-mount with current data
+        // Opening: re-mount with the latest item data from the `items` array.
         fieldsEl.style.display = ''
         mountItemFields()
       }
@@ -221,13 +225,16 @@ function mount(container, value, onChange, options) {
         _id: v._id ?? uniqId(),
       }))
 
-      // Only re-render if the list structure changed (add/remove/reorder)
+      // Smart-diff: only rebuild the DOM when the list *structure* changes
+      // (items added, removed, or reordered). If only field values changed,
+      // the item count and IDs are the same, so we skip re-render and just
+      // update the `items` reference. This preserves each item's open/closed
+      // collapse state — a full re-render would reset everything to closed.
       const sameIds =
         newItems.length === items.length &&
         newItems.every((v, i) => v._id === items[i]?._id)
 
       if (sameIds) {
-        // Just update item data without re-rendering the list
         items = newItems
         return
       }
