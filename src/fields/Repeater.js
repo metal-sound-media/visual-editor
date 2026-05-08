@@ -83,8 +83,7 @@ function mount(container, value, onChange, options) {
     dragHandle.innerHTML = `<svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor"><circle cx="4" cy="4" r="1.5"/><circle cx="8" cy="4" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="8" cy="8" r="1.5"/><circle cx="4" cy="12" r="1.5"/><circle cx="8" cy="12" r="1.5"/></svg>`
     headingLeft.appendChild(dragHandle)
 
-    const titleEl = document.createElement('button')
-    titleEl.type = 'button'
+    const titleEl = document.createElement('span')
     titleEl.className = 've-bloc-title'
     const collapsed = options.collapsed
     const rawTitle = collapsed && item[collapsed] ? item[collapsed] : `#${index + 1}`
@@ -156,11 +155,6 @@ function mount(container, value, onChange, options) {
         mountItemFields()
       }
     }
-
-    titleEl.addEventListener('click', (e) => {
-      e.preventDefault()
-      toggleCollapse()
-    })
 
     collapseBtn.addEventListener('click', (e) => {
       e.preventDefault()
