@@ -194,17 +194,23 @@ function mount(container, value, onChange, options) {
   addBtn.addEventListener('click', (e) => {
     e.preventDefault()
     if (!canAdd()) return
+    const wasRemovable = canRemove()
     const newItem = {
       ...fillDefaults({}, options.fields ?? []),
       _id: uniqId(),
       _autoOpen: true,
     }
     items = [...items, newItem]
-    // Append only the new item — preserves existing items' DOM state (open/closed)
-    const newItemEl = createItemEl(newItem, items.length - 1)
-    repeaterEl.insertBefore(newItemEl, footer)
-    itemElements.push(newItemEl)
-    footer.style.display = canAdd() ? '' : 'none'
+    if (!wasRemovable && canRemove()) {
+      // canRemove flipped to true: existing items need delete buttons — full re-render
+      renderItems()
+    } else {
+      // Append only the new item — preserves existing items' DOM state (open/closed)
+      const newItemEl = createItemEl(newItem, items.length - 1)
+      repeaterEl.insertBefore(newItemEl, footer)
+      itemElements.push(newItemEl)
+      footer.style.display = canAdd() ? '' : 'none'
+    }
     fireChange()
   })
   footer.appendChild(addBtn)
