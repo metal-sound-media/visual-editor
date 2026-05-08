@@ -22,5 +22,11 @@ export default defineConfig({
       formats: ['es'],
       fileName: () => 'VisualEditor.standalone.js',
     },
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        format: 'es',
+      },
+    },
   },
 })
