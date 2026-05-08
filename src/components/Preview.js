@@ -119,10 +119,16 @@ export function createPreview(store, { previewUrl }) {
       const html = await r.text()
       const doc = iframe.contentDocument
       if (doc) {
+        const scrollY = iframe.contentWindow?.scrollY ?? 0
         doc.open()
         doc.write(html)
         doc.close()
         injectOverlays(iframe, store)
+        if (scrollY > 0) {
+          requestAnimationFrame(() => {
+            iframe.contentWindow?.scrollTo(0, scrollY)
+          })
+        }
       }
     } catch (e) {
       // network error — fail silently
