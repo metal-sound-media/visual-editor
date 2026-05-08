@@ -27,6 +27,13 @@ $twig = createTwigEnv();
       --lightblue: #00e5ff;
       --white: #FFF;
     }
+    blockquote {
+        margin: 0 0 0.5em;
+        padding: 0.4em 0.75em;
+        border-left: 3px solid var(--blue);
+        font-style: italic;
+        border-radius: 0 3px 3px 0;
+    }
     .text-right {
       text-align: right;
     }
@@ -77,7 +84,7 @@ $twig = createTwigEnv();
   </div>
 </header>
 
-<main role="main" id="ve-components">
+<main role="main" id="ve-components" style="margin: 2rem">
 <?php
 foreach ($data ?? [] as $block) { renderBlockTwig($twig, $block); }
 ?>

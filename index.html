@@ -32,11 +32,6 @@
       background-color: rgb(99, 102, 241);
       color: #FFF;
     }
-    .hero {
-      max-width: 800px;
-      margin: 40px auto;
-      text-align: center;
-    }
     :root {
       --bs-blue: #0d6efd;
       --bs-indigo: #6610f2;
@@ -113,26 +108,6 @@
     }
   }
   const editor1 = document.getElementById('editor1')
-  editor1.setAttribute('value', localStorage.getItem('editor1value') || JSON.stringify([
-    {
-      title: "Album example",
-      titleAlign: "left",
-      content: "<p>Something short and leading about the collection below—its contents, the creator, etc. Make it short and sweet, but not too short so folks don't simply skip over it entirely.</p>",
-      buttons: [
-        {
-          "label": "Main call to action",
-          "url": "#",
-          "type": "primary"
-        },
-        {
-          "label": "Secondary action",
-          "url": "#",
-          "type": "secondary"
-        }
-      ],
-      _name: "hero"
-    }
-  ]))
 
   // Toggle the editor
   document.querySelectorAll('.button[data-target]').forEach((button) => {
@@ -151,7 +126,6 @@
 
   // Test how the field handle being synced (behaviour used by front-end framework)
   document.querySelector('#editor1').addEventListener('change', (e) => {
-    localStorage.setItem('editor1value', e.target.value)
     console.log(e.target.valueAsArray)
     e.target.value = e.target.valueAsArray
   })
