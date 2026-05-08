@@ -126,12 +126,12 @@ export function createPreview(store, { previewUrl }) {
         injectOverlays(iframe, store)
         if (scrollY > 0) {
           requestAnimationFrame(() => {
-            iframe.contentWindow?.scrollTo(0, scrollY)
+            iframe.contentWindow?.scrollTo({ top: scrollY, behavior: 'instant' })
           })
         }
       }
     } catch (e) {
-      // network error — fail silently
+      console.error(e)
     }
   }
 
