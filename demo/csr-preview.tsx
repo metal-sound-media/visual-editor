@@ -1,3 +1,15 @@
+/**
+ * CSR (Client-Side Rendering) preview demo.
+ *
+ * This file demonstrates the postMessage-based preview architecture where the
+ * editor sends block data to the preview iframe via `window.postMessage`, and
+ * the iframe renders blocks using custom elements:
+ *   - <ve-wrapper data-id="..."> wraps each block for hover/click overlays
+ *   - <ve-add data-index="..."> renders "add block" insertion buttons
+ *
+ * This pattern is used when you want a React/JS-rendered preview instead of
+ * the default server-side (Twig) rendering. See Preview.js for the SSR variant.
+ */
 import { createRoot } from 'react-dom/client'
 import {
   type EditorMessageEvents,

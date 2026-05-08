@@ -58,7 +58,7 @@ const HEADING_OPTIONS = [
 const HEADING_LABELS = { p: 'P', h2: 'H2', h3: 'H3', h4: 'H4', h5: 'H5', h6: 'H6' }
 
 
-function normalizeHtml(html, multiline) {
+export function normalizeHtml(html, multiline) {
   html = html
     .replace(/<b>/g, '<strong>')
     .replace(/<\/b>/g, '</strong>')

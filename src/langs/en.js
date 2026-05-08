@@ -14,6 +14,8 @@ export const Translations = {
   deleteItemConfirm: 'The component has been deleted',
   save: 'Save',
   close: 'Close',
+  closeConfirm: 'Close the editor? Unsaved changes will be lost.',
+  allBlocs: 'All blocks',
   noContent: `You have no content yet`,
   useTemplate: 'Use a template',
   poweredBy: 'Powered by',

@@ -26,10 +26,7 @@ const Colors = [
 ]
 
 const ImageField = (name = 'image', label = 'Image') =>
-  ImageUrl(name, {
-    label,
-    onBrowse: () => Promise.resolve('https://picsum.photos/425/458'),
-  })
+  ImageUrl(name, { label })
 
 const ButtonField = () =>
   Row([
@@ -107,6 +104,12 @@ const editor = new VisualEditor({
 })
 
 registerBlocks(editor)
+
+editor.setBrowse((currentUrl) => {
+  console.log('[VisualEditor] onBrowse called', { currentUrl })
+  alert('onBrowse has been triggered — check the browser console for details.')
+  return Promise.resolve(null)
+})
 
 editor.defineElement()
 

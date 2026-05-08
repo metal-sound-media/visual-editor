@@ -164,6 +164,15 @@ editor.registerComponent('gallery-images', galleryImages({
 
 Both blocks remain fully usable without the option — omitting it produces the same behaviour as before (text input only, no browse button).
 
+Alternatively, register a single callback at the editor level — it applies to all `ImageUrl` fields that don't have their own `onBrowse` option:
+
+```js
+editor.setBrowse(async (currentUrl) => {
+  const url = await openMediaPicker(currentUrl)
+  return url // return null to cancel
+})
+```
+
 ### Conditional fields
 
 Use `.when(fieldName, value)` to conditionally show a field:
@@ -250,6 +259,7 @@ const editor = new VisualEditor({
 editor.registerComponent(name, definition)  // Register a block type
 editor.registerTemplate(template)           // Register a template
 editor.registerButton(action)               // Add a custom action button
+editor.setBrowse(fn)                        // Register a global image browse callback for all ImageUrl fields
 editor.defineElement(elementName?)          // Register the custom element (default: 'visual-editor')
 ```
 

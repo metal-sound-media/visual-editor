@@ -1,4 +1,5 @@
 import { defineField } from './index.js'
+import { getBrowseCallback } from '../functions/browse.js'
 
 function mount(container, value, onChange, options) {
   const wrapper = document.createElement('div')
@@ -21,14 +22,15 @@ function mount(container, value, onChange, options) {
   el.addEventListener('input', (e) => onChange(e.target.value))
   row.appendChild(el)
 
-  if (options.onBrowse) {
+  const onBrowse = options.onBrowse ?? getBrowseCallback()
+  if (onBrowse) {
     const btn = document.createElement('button')
     btn.className = 've-btn ve-btn-secondary ve-btn-small'
     btn.type = 'button'
     btn.textContent = '...'
     btn.addEventListener('click', async () => {
       try {
-        const url = await options.onBrowse(el.value)
+        const url = await onBrowse(el.value)
         if (url != null) {
           el.value = url
           onChange(url)

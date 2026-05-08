@@ -8,6 +8,17 @@ const ICON_CLOSE = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" 
 const ICON_PLUS = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`
 const ICON_SAVE = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>`
 const ICON_COPY = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`
+const ICON_COPY_SUCCESS = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`
+
+function flashCopyBtn(btn) {
+  const original = btn.innerHTML
+  btn.innerHTML = ICON_COPY_SUCCESS
+  btn.disabled = true
+  setTimeout(() => {
+    btn.innerHTML = original
+    btn.disabled = false
+  }, 3000)
+}
 const ICON_TRASH = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>`
 const ICON_DOWN = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`
 const ICON_UP = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>`
@@ -35,7 +46,7 @@ export function createSidebar(store, { onClose }) {
   closeBtn.innerHTML = ICON_CLOSE
   closeBtn.addEventListener('click', (e) => {
     e.preventDefault()
-    onClose()
+    if (window.confirm(t('closeConfirm'))) onClose()
   })
   headerLeft.appendChild(closeBtn)
   header.appendChild(headerLeft)
@@ -59,6 +70,7 @@ export function createSidebar(store, { onClose }) {
   copyBtn.addEventListener('click', () => {
     const { data } = store.get()
     navigator.clipboard?.writeText(JSON.stringify(data)).catch(() => {})
+    flashCopyBtn(copyBtn)
   })
   headerRight.appendChild(copyBtn)
 
@@ -159,6 +171,34 @@ export function createSidebar(store, { onClose }) {
     templateToggleBtn.style.display = templates.length > 0 ? '' : 'none'
     renderContent()
   })
+
+  // Paste handler: CTRL+V pastes a copied block (JSON) when not focused in a field
+  const onPaste = (e) => {
+    const active = document.activeElement
+    if (active?.tagName === 'INPUT' || active?.tagName === 'TEXTAREA' || active?.isContentEditable) return
+    const text = e.clipboardData?.getData('text/plain')
+    if (!text) return
+    try {
+      const parsed = JSON.parse(text)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed._name) {
+        e.preventDefault()
+        const { _id, _name, ...fields } = parsed
+        store.insertData(_name, store.get().data.length, fields)
+        return
+      }
+      if (Array.isArray(parsed) && parsed.length && parsed[0]?._name) {
+        e.preventDefault()
+        parsed.forEach((block) => {
+          const { _id, _name, ...fields } = block
+          store.insertData(_name, store.get().data.length, fields)
+        })
+      }
+    } catch (err) {
+      console.error('[VisualEditor] Failed to paste block:', err)
+      alert('Unable to paste: clipboard content is not a valid block. See console for details.')
+    }
+  }
+  document.addEventListener('paste', onPaste)
 
   return el
 }
@@ -285,6 +325,7 @@ function createBlocEl(store, data, definition, path, initialFocusIndex) {
   copyBlocBtn.addEventListener('click', (e) => {
     e.stopPropagation()
     navigator.clipboard?.writeText(JSON.stringify(data)).catch(() => {})
+    flashCopyBtn(copyBlocBtn)
   })
   hoverActions.appendChild(copyBlocBtn)
 

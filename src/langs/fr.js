@@ -14,6 +14,8 @@ export const Translations = {
   unknownComponent: 'Bloc inconnu',
   save: 'Sauvegarder',
   close: 'Fermer',
+  closeConfirm: "Fermer l'éditeur ? Les modifications non enregistrées seront perdues.",
+  allBlocs: 'Tous les blocs',
   poweredBy: 'Propulsé par',
   noContent: `Vous n'avez pas encore de contenu`,
   useTemplate: 'Utilisez un template',

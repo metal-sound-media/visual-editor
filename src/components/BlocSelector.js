@@ -80,7 +80,7 @@ export function createBlocSelector(store, { iconsUrl }) {
 
     tabsNav.style.display = ''
 
-    const allBtn = makeTabBtn('all', 'Tous les blocs')
+    const allBtn = makeTabBtn('all', t('allBlocs'))
     tabsNav.appendChild(allBtn)
     categoryBtns.push(allBtn)
 
@@ -131,13 +131,21 @@ export function createBlocSelector(store, { iconsUrl }) {
         store.setAddBlockIndex(null)
       })
 
-      const iconUrl = iconsUrl.replace('[name]', key)
-      const img = document.createElement('img')
-      img.className = 've-bloc-item-icon'
-      img.src = iconUrl
-      img.alt = def.title
-      img.onerror = () => img.style.display = 'none'
-      item.appendChild(img)
+      if (def.icon) {
+        const iconEl = document.createElement('div')
+        iconEl.className = 've-bloc-item-icon'
+        iconEl.innerHTML = def.icon
+        item.appendChild(iconEl)
+      } else {
+        const img = document.createElement('img')
+        img.className = 've-bloc-item-icon'
+        img.src = iconsUrl.replace('[name]', key)
+        img.alt = def.title
+        img.width = 40
+        img.height = 40
+        img.onerror = () => (img.style.display = 'none')
+        item.appendChild(img)
+      }
 
       const label = document.createElement('div')
       label.className = 've-bloc-item-title'

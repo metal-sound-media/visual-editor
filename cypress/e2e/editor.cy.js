@@ -143,6 +143,32 @@ describe('Editor behaviour', () => {
       )
     })
 
+    it('should apply heading H2 with toolbar dropdown', () => {
+      addBlock()
+      cy.contains('label', 'HTML Multiline').siblings().first().click()
+      cy.get('body').type('Mon titre')
+      cy.contains('.ve-htmltext-heading-btn', 'P').click()
+      cy.contains('.ve-htmltext-heading-option', 'Heading 2').click()
+      assertValue((v) => v[0].multiline?.includes('<h2>'))
+    })
+
+    it('should not show bold as active inside a heading', () => {
+      addBlock()
+      cy.contains('label', 'HTML Multiline').siblings().first().click()
+      cy.get('body').type('Titre')
+      cy.contains('.ve-htmltext-heading-btn', 'P').click()
+      cy.contains('.ve-htmltext-heading-option', 'Heading 2').click()
+      cy.get('[title="Bold"]').first().should('not.have.class', 've-active')
+    })
+
+    it('should create a blockquote with the toolbar', () => {
+      addBlock()
+      cy.contains('label', 'HTML Multiline').siblings().first().click()
+      cy.get('body').type('Citation')
+      cy.get('[title="Blockquote"]').click()
+      assertValue((v) => v[0].multiline?.includes('<blockquote>'))
+    })
+
     it.skip('should insert multiple paragraphs with toolbar and use align', () => {
       addBlock()
       cy.contains('label', 'HTML Multiline').siblings().first().click()
@@ -172,8 +198,44 @@ describe('Editor behaviour', () => {
     })
   })
 
+  describe('Copy/Paste', () => {
+    it('should paste a copied block via synthetic paste event', () => {
+      addBlock()
+      assertValue((v) => v.length === 1)
+
+      // Simulate a paste event with a valid block JSON on the sidebar
+      cy.get('.ve-sidebar-blocs').trigger('paste', {
+        clipboardData: {
+          getData: (type) =>
+            type === 'text/plain'
+              ? JSON.stringify({ _name: 'demo', text: 'pasted' })
+              : '',
+        },
+      })
+
+      assertValue((v) => v.length === 2)
+    })
+
+    it('should not paste when active element is an input', () => {
+      addBlock()
+      // Focus an input field so the paste guard activates
+      cy.contains('label', 'Text').click()
+      cy.focused().trigger('paste', {
+        clipboardData: {
+          getData: (type) =>
+            type === 'text/plain'
+              ? JSON.stringify({ _name: 'demo', text: 'pasted' })
+              : '',
+        },
+      })
+      // Block count should remain 1 — paste was ignored
+      assertValue((v) => v.length === 1)
+    })
+  })
+
   describe('Events', () => {
     it('should trigger close event on close', () => {
+      cy.on('window:confirm', () => true)
       cy.document().then((el) => {
         el.querySelector('visual-editor').addEventListener(
           'close',

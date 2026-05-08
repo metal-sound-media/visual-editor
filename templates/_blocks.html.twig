@@ -3,5 +3,7 @@
 {% endif %}
 
 {% for block in blocks %}
+<div class="ve-block-wrapper" data-id="{{ block._id }}" data-name="{{ block._name }}" style="position:relative">
     {{ include('visual-editor/article/_' ~ block._name ~ '.html.twig', block) }}
+</div>
 {% endfor %}

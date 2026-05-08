@@ -17,24 +17,28 @@ import { spotifyPlaylist, spotifyTrack, spotifyPodcast, spotifyAlbum, spotifyArt
 import { soundcloudTrack, soundcloudPlaylist } from './soundcloud.js'
 import { bandcamp } from './bandcamp.js'
 import { tidalPlaylist, tidalTrack, tidalAlbum } from './tidal.js'
+import { BLOCK_ICONS } from '../icons/blocks.js'
 
 export function registerBlocks(editor) {
-  editor.registerComponent('simple-text', simpleText())
-  editor.registerComponent('button', button())
-  editor.registerComponent('simple-image', simpleImage())
-  editor.registerComponent('gallery-images', galleryImages())
-  editor.registerComponent('youtube', youtubeVideo())
-  editor.registerComponent('youtube-playlist', youtubePlaylist())
-  editor.registerComponent('dailymotion', dailymotion())
-  editor.registerComponent('spotify-playlist', spotifyPlaylist())
-  editor.registerComponent('spotify-track', spotifyTrack())
-  editor.registerComponent('spotify-podcast', spotifyPodcast())
-  editor.registerComponent('spotify-album', spotifyAlbum())
-  editor.registerComponent('spotify-artist', spotifyArtist())
-  editor.registerComponent('soundcloud-track', soundcloudTrack())
-  editor.registerComponent('soundcloud-playlist', soundcloudPlaylist())
-  editor.registerComponent('bandcamp-track', bandcamp())
-  editor.registerComponent('tidal-playlist', tidalPlaylist())
-  editor.registerComponent('tidal-track', tidalTrack())
-  editor.registerComponent('tidal-album', tidalAlbum())
+  const reg = (name, def) =>
+    editor.registerComponent(name, BLOCK_ICONS[name] ? { ...def, icon: BLOCK_ICONS[name] } : def)
+
+  reg('simple-text', simpleText())
+  reg('button', button())
+  reg('simple-image', simpleImage())
+  reg('gallery-images', galleryImages())
+  reg('youtube', youtubeVideo())
+  reg('youtube-playlist', youtubePlaylist())
+  reg('dailymotion', dailymotion())
+  reg('spotify-playlist', spotifyPlaylist())
+  reg('spotify-track', spotifyTrack())
+  reg('spotify-podcast', spotifyPodcast())
+  reg('spotify-album', spotifyAlbum())
+  reg('spotify-artist', spotifyArtist())
+  reg('soundcloud-track', soundcloudTrack())
+  reg('soundcloud-playlist', soundcloudPlaylist())
+  reg('bandcamp-track', bandcamp())
+  reg('tidal-playlist', tidalPlaylist())
+  reg('tidal-track', tidalTrack())
+  reg('tidal-album', tidalAlbum())
 }

@@ -8,6 +8,7 @@ import { createPreview } from './components/Preview.js'
 import { createBlocSelector } from './components/BlocSelector.js'
 import { createRollbackMessage } from './components/RollbackMessage.js'
 import { cssText } from './styles.js'
+import { setBrowseCallback } from './functions/browse.js'
 
 // Inject CSS once into document head
 let cssInjected = false
@@ -57,6 +58,10 @@ export class VisualEditor {
 
   registerButton(action) {
     _actions.push(action)
+  }
+
+  setBrowse(fn) {
+    setBrowseCallback(fn)
   }
 
   defineElement(elementName = 'visual-editor') {
@@ -217,9 +222,9 @@ export class VisualEditor {
         const blocSelector = createBlocSelector(this._store, { iconsUrl })
         layout.appendChild(blocSelector)
 
-        // Rollback message
+        // Rollback message — mounted on body to avoid fixed-position containing-block issues
         const rollback = createRollbackMessage(this._store)
-        layout.appendChild(rollback)
+        root.appendChild(rollback)
 
         root.appendChild(layout)
 
