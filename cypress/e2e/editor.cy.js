@@ -108,7 +108,7 @@ describe('Editor behaviour', () => {
       addBlock()
       cy.contains('button', 'Add an item').click()
       cy.contains('button', 'Add an item').click()
-      cy.contains('button', '#1').last().click()
+      cy.contains('.ve-repeater-item', '#1').find('button.ve-btn-icon').first().click()
       cy.contains('label', 'Text 2').last().click()
       cy.get('body').type('Content #2')
       assertValue((v) => {
@@ -129,7 +129,7 @@ describe('Editor behaviour', () => {
       addBlock()
       cy.contains('label', 'HTML One line').siblings().first().click()
       cy.get('body').type('Hello world{selectall}')
-      cy.get('[title="Bold"]').click()
+      cy.contains('label', 'HTML One line').parent().find('[title="Bold"]').click()
       assertValueMatch('oneline', '<strong>Hello world</strong>')
     })
 

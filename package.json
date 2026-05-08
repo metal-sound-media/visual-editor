@@ -13,7 +13,7 @@
     "serve": "vite preview",
     "format": "prettier --config .prettierrc 'src/**/*.{js,ts}' --write",
     "test": "npm run test:unit && npm run test:e2e",
-    "test:e2e": "start-server-and-test 'php -S 0.0.0.0:8000 -ddisplay_errors=1 -q' http://localhost:8000 'npx cypress run'",
+    "test:e2e": "xvfb-run --auto-servernum start-server-and-test 'php -S 0.0.0.0:8000 -ddisplay_errors=1 -q' http://localhost:8000 'npx cypress run'",
     "test:e2e:watch": "start-server-and-test 'php -S 0.0.0.0:8000 -ddisplay_errors=1 -q' http://localhost:8000 'npx cypress open'",
     "test:unit": "vitest run"
   },
