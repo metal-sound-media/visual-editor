@@ -197,8 +197,9 @@ import {
   // or individual blocks:
   simpleText, button,
   simpleImage, galleryImages,
-  youtubeVideo, youtubePlaylist,
+  youtubeVideo, youtubePlaylist, youtubeShort,
   dailymotion,
+  instagramPost, instagramReel, tiktokVideo,
   spotifyPlaylist, spotifyTrack, spotifyPodcast, spotifyAlbum, spotifyArtist,
   soundcloudTrack, soundcloudPlaylist,
   bandcamp,
@@ -223,7 +224,11 @@ editor.registerComponent('youtube', youtubeVideo())
 | `galleryImages`      | `gallery-images`      | Image    | Repeatable image gallery       |
 | `youtubeVideo`       | `youtube`             | Video    | YouTube video by URL           |
 | `youtubePlaylist`    | `youtube-playlist`    | Video    | YouTube playlist by URL        |
+| `youtubeShort`       | `youtube-short`       | Video    | YouTube Short by URL           |
 | `dailymotion`        | `dailymotion`         | Video    | Dailymotion video by URL       |
+| `instagramPost`      | `instagram`           | Social   | Instagram post by URL          |
+| `instagramReel`      | `instagram-reel`      | Social   | Instagram reel by URL          |
+| `tiktokVideo`        | `tiktok`              | Social   | TikTok video by URL            |
 | `spotifyPlaylist`    | `spotify-playlist`    | Music    | Spotify playlist embed         |
 | `spotifyTrack`       | `spotify-track`       | Music    | Spotify track embed            |
 | `spotifyPodcast`     | `spotify-podcast`     | Music    | Spotify podcast embed          |

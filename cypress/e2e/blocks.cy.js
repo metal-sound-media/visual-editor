@@ -92,11 +92,46 @@ describe('Built-in blocks', () => {
     cy.contains('label', 'Video URL').should('exist')
   })
 
+  it('youtube-short: can add with default URL', () => {
+    addBlock('YouTube Short')
+    assertValue((v) => {
+      expect(v[0]._name).to.equal('youtube-short')
+      expect(v[0].url).to.equal('https://www.youtube.com/shorts/qG5rrksKiy0')
+    })
+    cy.contains('label', 'Video URL').should('exist')
+  })
+
   it('dailymotion: can add and shows URL field', () => {
     addBlock('Dailymotion video')
     assertValue((v) => expect(v[0]._name).to.equal('dailymotion'))
     cy.contains('label', 'Video URL').should('exist')
     assertTwigRender('dailymotion', { url: 'https://www.dailymotion.com/video/x3jysmt' })
+  })
+
+  // ── Social ────────────────────────────────────────────────────────────────
+
+  it('instagram: can add with default post URL', () => {
+    addBlock('Instagram post')
+    assertValue((v) => {
+      expect(v[0]._name).to.equal('instagram')
+      expect(v[0].url).to.equal('https://www.instagram.com/p/DXbgfO-DYHg/')
+    })
+    cy.contains('label', 'Post URL').should('exist')
+  })
+
+  it('instagram-reel: can add with default reel URL', () => {
+    addBlock('Instagram reel')
+    assertValue((v) => {
+      expect(v[0]._name).to.equal('instagram-reel')
+      expect(v[0].url).to.equal('https://www.instagram.com/reel/DSiAuVfjKs0/')
+    })
+    cy.contains('label', 'Reel URL').should('exist')
+  })
+
+  it('tiktok: can add and shows URL field', () => {
+    addBlock('TikTok video')
+    assertValue((v) => expect(v[0]._name).to.equal('tiktok'))
+    cy.contains('label', 'Video URL').should('exist')
   })
 
   // ── Spotify ───────────────────────────────────────────────────────────────

@@ -28,3 +28,17 @@ export function youtubePlaylist() {
     ],
   }
 }
+
+export function youtubeShort() {
+  return {
+    category: t('categoryVideo'),
+    title: t('youtubeShortTitle'),
+    fields: [
+      Text('url', {
+        label: t('videoUrl'),
+        multiline: false,
+        default: 'https://www.youtube.com/shorts/qG5rrksKiy0',
+      }),
+    ],
+  }
+}

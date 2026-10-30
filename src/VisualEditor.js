@@ -352,7 +352,8 @@ export { defineField, defineFieldGroup } from './fields/index.js'
 export {
   registerBlocks,
   simpleText, button, simpleImage, galleryImages,
-  youtubeVideo, youtubePlaylist, dailymotion,
+  youtubeVideo, youtubePlaylist, youtubeShort, dailymotion,
+  instagramPost, instagramReel, tiktokVideo,
   spotifyPlaylist, spotifyTrack, spotifyPodcast, spotifyAlbum, spotifyArtist,
   soundcloudTrack, soundcloudPlaylist,
   bandcamp,
