@@ -198,6 +198,179 @@ describe('Editor behaviour', () => {
     })
   })
 
+  describe('Links', () => {
+    const parse = (html) =>
+      new DOMParser().parseFromString(html, 'text/html').body
+    const links = (html) => [...parse(html).querySelectorAll('a')]
+
+    const getEditor = (label) =>
+      cy.contains('label', label).siblings().first().find('[contenteditable]')
+
+    const focusEditor = (label) => {
+      cy.contains('label', label).siblings().first().click()
+      return getEditor(label)
+    }
+
+    const paste = (label, text, types = ['text/plain']) =>
+      getEditor(label).trigger('paste', {
+          clipboardData: {
+            types,
+            getData: (type) => (type === 'text/plain' ? text : ''),
+          },
+        })
+
+    it('should link a URL typed before a space', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Visit https://example.com/path now')
+      assertValue((v) => {
+        const [a] = links(v[0].oneline)
+        expect(links(v[0].oneline)).to.have.length(1)
+        expect(a.getAttribute('href')).to.equal('https://example.com/path')
+        expect(a.textContent).to.equal('https://example.com/path')
+        expect(a.target).to.equal('_blank')
+        expect(a.rel).to.equal('noopener noreferrer')
+        expect(parse(v[0].oneline).textContent.replace(/\s/g, ' ')).to.equal(
+          'Visit https://example.com/path now'
+        )
+      })
+    })
+
+    it('should not include the final punctuation in the link', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('See www.example.com. Thanks')
+      assertValue((v) => {
+        const [a] = links(v[0].oneline)
+        expect(a.getAttribute('href')).to.equal('https://www.example.com')
+        expect(a.textContent).to.equal('www.example.com')
+        expect(a.nextSibling.textContent).to.match(/^\.\sThanks$/)
+      })
+    })
+
+    it('should link a URL typed before Enter', () => {
+      addBlock()
+      focusEditor('HTML Multiline')
+      cy.get('body').type('https://example.com')
+      // Cypress {enter} reports an "insertText" input, browsers an "insertParagraph" one
+      cy.document().then((doc) => doc.execCommand('insertParagraph'))
+      getEditor('HTML Multiline').find('a').should('exist')
+      cy.get('body').type('Next line')
+      assertValue((v) => {
+        const [a] = links(v[0].multiline)
+        expect(a.getAttribute('href')).to.equal('https://example.com')
+        expect(a.closest('p').nextElementSibling.textContent).to.equal(
+          'Next line'
+        )
+      })
+    })
+
+    it('should not link www inside a word', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('awww.chouette.fr ok')
+      assertValue((v) => {
+        expect(v[0].oneline).to.contain('ok')
+        expect(links(v[0].oneline)).to.have.length(0)
+      })
+    })
+
+    it('should not touch the existing links', () => {
+      addBlock()
+      // Content saved before, with an internal link
+      focusEditor('HTML One line').then(($el) => {
+        $el[0].innerHTML = '<a href="/contact">Contact</a> us'
+        $el[0].dispatchEvent(new Event('input', { bubbles: true }))
+      })
+      cy.get('body').type('{end} https://example.com ')
+      assertValue((v) => {
+        const [internal, external] = links(v[0].oneline)
+        expect(internal.getAttribute('href')).to.equal('/contact')
+        expect(internal.hasAttribute('target')).to.be.false
+        expect(external.getAttribute('href')).to.equal('https://example.com')
+        expect(external.target).to.equal('_blank')
+      })
+    })
+
+    it('should link the URLs of a pasted plain text', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      paste('HTML One line', 'Go to www.example.com, <b>now</b>')
+      assertValue((v) => {
+        const [a] = links(v[0].oneline)
+        expect(a.getAttribute('href')).to.equal('https://www.example.com')
+        expect(parse(v[0].oneline).textContent).to.equal(
+          'Go to www.example.com, <b>now</b>'
+        )
+      })
+    })
+
+    it('should link the selected text when pasting a URL', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Click here{selectall}')
+      paste('HTML One line', 'https://example.com.')
+      assertValue((v) => {
+        const [a] = links(v[0].oneline)
+        expect(a.getAttribute('href')).to.equal('https://example.com')
+        expect(a.textContent).to.equal('Click here')
+        expect(a.rel).to.equal('noopener noreferrer')
+      })
+    })
+
+    it('should keep the native paste for rich content', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Hello')
+      paste('HTML One line', 'see https://example.com', [
+        'text/plain',
+        'text/html',
+      ])
+      assertValue((v) => {
+        expect(v[0].oneline).to.equal('Hello')
+      })
+    })
+
+    it('should not create a link inside an existing link', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Click here{selectall}')
+      paste('HTML One line', 'https://example.com')
+      focusEditor('HTML One line')
+      cy.get('body').type('{selectall}')
+      paste('HTML One line', 'https://other.com')
+      assertValue((v) => {
+        expect(links(v[0].oneline)).to.have.length(1)
+        expect(links(v[0].oneline)[0].getAttribute('href')).to.equal(
+          'https://example.com'
+        )
+      })
+    })
+
+    it('should add https:// to a domain typed in the link modal', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Site{selectall}')
+      cy.contains('label', 'HTML One line').parent().find('[title="Link"]').click()
+      cy.get('.ve-link-modal-input').type('www.example.com{enter}')
+      assertValue((v) => {
+        const [a] = links(v[0].oneline)
+        expect(a.getAttribute('href')).to.equal('https://www.example.com')
+        expect(a.rel).to.equal('noopener noreferrer')
+      })
+    })
+
+    it('should refuse a javascript: URL in the link modal', () => {
+      addBlock()
+      focusEditor('HTML One line')
+      cy.get('body').type('Site{selectall}')
+      cy.contains('label', 'HTML One line').parent().find('[title="Link"]').click()
+      cy.get('.ve-link-modal-input').type('javascript:alert(1){enter}')
+      cy.get('.ve-link-modal-overlay').should('not.be.visible')
+      assertValue((v) => expect(v[0].oneline).to.equal('Site'))
+    })
+  })
+
   describe('Copy/Paste', () => {
     it('should paste a copied block via synthetic paste event', () => {
       addBlock()

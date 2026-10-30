@@ -1,6 +1,14 @@
 import { defaultFieldProperties } from './index.js'
 import { colorToProperty } from '../functions/css.js'
 import {
+  findUrlAtEnd,
+  findSingleUrl,
+  findUrls,
+  linkifyText,
+  normalizeHref,
+  urlToHref,
+} from '../functions/autolink.js'
+import {
   ICON_BOLD,
   ICON_ITALIC,
   ICON_UNDERLINE,
@@ -17,6 +25,7 @@ import {
 } from '../icons.js'
 
 const BLOCK_START = /^<(p|h[2-6]|ul|ol|blockquote)/i
+const BLOCK_SELECTOR = 'p, h1, h2, h3, h4, h5, h6, li, blockquote, div'
 
 const TOOLBAR_BUTTONS_INLINE = [
   { cmd: 'bold', title: 'Bold', icon: ICON_BOLD, toggle: true },
@@ -100,6 +109,131 @@ function makeToolbarBtn(title, iconHtml) {
 
 function dispatchInput(editorEl) {
   editorEl.dispatchEvent(new Event('input', { bubbles: true }))
+}
+
+function setLinkAttributes(a) {
+  a.target = '_blank'
+  a.rel = 'noopener noreferrer'
+}
+
+// Link the current selection, only the links created here get target / rel
+// (existing links, internal ones for instance, are left untouched)
+function createLink(editorEl, href) {
+  const existing = new Set(editorEl.querySelectorAll('a'))
+  document.execCommand('createLink', false, href)
+  const created = [...editorEl.querySelectorAll('a')].filter(
+    (a) => !existing.has(a)
+  )
+  created.forEach(setLinkAttributes)
+  // execCommand already fired "input", but before target / rel were set
+  dispatchInput(editorEl)
+  return created
+}
+
+function rangeTouchesLink(range) {
+  const container = range.commonAncestorContainer
+  const el =
+    container.nodeType === Node.ELEMENT_NODE
+      ? container
+      : container.parentElement
+  if (!el) return false
+  return (
+    !!el.closest('a') ||
+    [...el.querySelectorAll('a')].some((a) => range.intersectsNode(a))
+  )
+}
+
+// Last text node starting before the caret, with the offset of the caret in it
+function textBeforeCaret(editorEl, caret) {
+  const walker = document.createTreeWalker(editorEl, NodeFilter.SHOW_TEXT)
+  let node = null
+  while (walker.nextNode() && caret.comparePoint(walker.currentNode, 0) < 0) {
+    node = walker.currentNode
+  }
+  if (!node) return null
+  return {
+    node,
+    end: node === caret.startContainer ? caret.startOffset : node.length,
+  }
+}
+
+function closestBlock(node, editorEl) {
+  const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement
+  const block = el?.closest(BLOCK_SELECTOR)
+  return block && editorEl.contains(block) && block !== editorEl
+    ? block
+    : editorEl
+}
+
+// The text to autolink must sit right before the caret: in the caret text node or block
+// (space, line break) or in the block preceding the caret one (new paragraph)
+function isRightBeforeCaret(node, caret, editorEl) {
+  if (node === caret.startContainer) return true
+  const caretBlock = closestBlock(caret.startContainer, editorEl)
+  if (closestBlock(node, editorEl) === caretBlock) return true
+  if (caretBlock === editorEl) return false
+  return !!caretBlock.previousElementSibling?.contains(node)
+}
+
+function autolinkBeforeCaret(editorEl) {
+  const sel = window.getSelection()
+  if (!sel?.rangeCount || !sel.isCollapsed) return
+  const caret = sel.getRangeAt(0).cloneRange()
+  const before = textBeforeCaret(editorEl, caret)
+  if (!before || before.node.parentElement?.closest('a')) return
+  if (!isRightBeforeCaret(before.node, caret, editorEl)) return
+
+  const match = findUrlAtEnd(before.node.data.slice(0, before.end))
+  if (!match) return
+
+  const caretAfterUrl =
+    caret.startContainer === before.node
+      ? caret.startOffset - match.index - match.url.length
+      : null
+  const range = document.createRange()
+  range.setStart(before.node, match.index)
+  range.setEnd(before.node, match.index + match.url.length)
+  sel.removeAllRanges()
+  sel.addRange(range)
+  const [link] = createLink(editorEl, urlToHref(match.url))
+
+  // When the caret was in the URL text node, put it back in the text following the link
+  // (a caret at the link boundary would make the next typed characters part of the link)
+  const next = link?.nextSibling
+  if (
+    caretAfterUrl !== null &&
+    next?.nodeType === Node.TEXT_NODE &&
+    next.length >= caretAfterUrl
+  ) {
+    caret.setStart(next, caretAfterUrl)
+    caret.collapse(true)
+  }
+  sel.removeAllRanges()
+  sel.addRange(caret)
+}
+
+function onPaste(e, editorEl) {
+  const text = e.clipboardData?.getData('text/plain')
+  const sel = window.getSelection()
+  if (!text?.trim() || !sel?.rangeCount) return
+  // Inside an existing link the native paste is kept, a new link would be nested in it
+  if (rangeTouchesLink(sel.getRangeAt(0))) return
+  if (findUrls(text).length === 0) return
+
+  const singleUrl = findSingleUrl(text)
+  if (singleUrl && !sel.isCollapsed) {
+    // Pasting a URL over selected text turns that text into a link
+    e.preventDefault()
+    createLink(editorEl, urlToHref(singleUrl))
+    return
+  }
+  // Rich or multi-line content keeps the native paste
+  const isRich = [...(e.clipboardData.types ?? [])].includes('text/html')
+  if (singleUrl || (!isRich && !text.includes('\n'))) {
+    e.preventDefault()
+    // execCommand fires "input" itself
+    document.execCommand('insertHTML', false, linkifyText(text.trim()))
+  }
 }
 
 // Fix 3: walk up to the direct child of blockquote before removing
@@ -242,7 +376,7 @@ function buildLinkUI(toolbar, editorEl) {
   }
 
   const applyLink = () => {
-    const url = modalInput.value.trim()
+    const url = normalizeHref(modalInput.value)
     if (!url) { closeModal(); return }
     editorEl.focus()
     if (savedRange) {
@@ -250,9 +384,7 @@ function buildLinkUI(toolbar, editorEl) {
       sel.removeAllRanges()
       sel.addRange(savedRange)
     }
-    document.execCommand('createLink', false, url)
-    editorEl.querySelectorAll('a:not([target])').forEach((a) => { a.target = '_blank' })
-    dispatchInput(editorEl)
+    createLink(editorEl, url)
     closeModal()
   }
 
@@ -434,6 +566,23 @@ function mount(container, value, onChange, options) {
     const html = normalizeHtml(editorEl.innerHTML, options.multiline)
     onChange(html)
   })
+
+  editorEl.addEventListener('input', (e) => {
+    if (e.isComposing) return
+    // Typing a space or Enter right after a URL turns it into a link
+    const typedSpace = e.inputType === 'insertText' && /^\s$/.test(e.data ?? '')
+    if (
+      typedSpace ||
+      e.inputType === 'insertParagraph' ||
+      e.inputType === 'insertLineBreak'
+    ) {
+      // Deferred: execCommand is not reentrant, it does nothing when the text
+      // was itself inserted with execCommand (extensions, test tools...)
+      queueMicrotask(() => autolinkBeforeCaret(editorEl))
+    }
+  })
+
+  editorEl.addEventListener('paste', (e) => onPaste(e, editorEl))
 
   if (!options.multiline) {
     editorEl.addEventListener('keydown', (e) => {
