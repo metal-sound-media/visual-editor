@@ -8,6 +8,7 @@ import {
   normalizeHref,
   urlToHref,
 } from '../functions/autolink.js'
+import { cleanInsertedElements, cleanPastedHtml } from '../functions/paste.js'
 import {
   ICON_BOLD,
   ICON_ITALIC,
@@ -212,27 +213,54 @@ function autolinkBeforeCaret(editorEl) {
   sel.addRange(caret)
 }
 
-function onPaste(e, editorEl) {
-  const text = e.clipboardData?.getData('text/plain')
-  const sel = window.getSelection()
-  if (!text?.trim() || !sel?.rangeCount) return
-  // Inside an existing link the native paste is kept, a new link would be nested in it
-  if (rangeTouchesLink(sel.getRangeAt(0))) return
-  if (findUrls(text).length === 0) return
+function insertHtml(html) {
+  // execCommand fires "input" itself
+  document.execCommand('insertHTML', false, html)
+}
 
-  const singleUrl = findSingleUrl(text)
+function onPaste(e, editorEl, options) {
+  const text = e.clipboardData?.getData('text/plain') ?? ''
+  const html = e.clipboardData?.getData('text/html') ?? ''
+  const sel = window.getSelection()
+  if (!sel?.rangeCount || (!text.trim() && !html.trim())) return
+
+  // Inside an existing link only the text is pasted, a new link would be nested in it
+  if (rangeTouchesLink(sel.getRangeAt(0))) {
+    e.preventDefault()
+    if (text) document.execCommand('insertText', false, text)
+    return
+  }
+
+  const hasUrl = findUrls(text).length > 0
+  const singleUrl = hasUrl ? findSingleUrl(text) : null
   if (singleUrl && !sel.isCollapsed) {
     // Pasting a URL over selected text turns that text into a link
     e.preventDefault()
     createLink(editorEl, urlToHref(singleUrl))
     return
   }
-  // Rich or multi-line content keeps the native paste
-  const isRich = [...(e.clipboardData.types ?? [])].includes('text/html')
-  if (singleUrl || (!isRich && !text.includes('\n'))) {
+
+  // Content copied from another page or document (Google Docs, Word...):
+  // its structure is kept, its style (fonts, colors, sizes...) is dropped
+  if (html.trim() && !singleUrl) {
     e.preventDefault()
-    // execCommand fires "input" itself
-    document.execCommand('insertHTML', false, linkifyText(text.trim()))
+    const cleaned = cleanPastedHtml(html, options.multiline)
+    if (!cleaned.trim()) {
+      if (text) document.execCommand('insertText', false, text)
+      return
+    }
+    const existing = new Set(editorEl.querySelectorAll('*'))
+    insertHtml(cleaned)
+    cleanInsertedElements(editorEl, existing)
+    // execCommand fired "input" before the cleaning
+    dispatchInput(editorEl)
+    return
+  }
+
+  // Plain text: its URLs become links (a multi-line text keeps the native paste)
+  if (hasUrl && (singleUrl || !text.includes('\n'))) {
+    e.preventDefault()
+    insertHtml(linkifyText(text.trim()))
   }
 }
 
@@ -582,7 +610,7 @@ function mount(container, value, onChange, options) {
     }
   })
 
-  editorEl.addEventListener('paste', (e) => onPaste(e, editorEl))
+  editorEl.addEventListener('paste', (e) => onPaste(e, editorEl, options))
 
   if (!options.multiline) {
     editorEl.addEventListener('keydown', (e) => {
