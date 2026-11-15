@@ -211,13 +211,14 @@ describe('Editor behaviour', () => {
       return getEditor(label)
     }
 
-    const paste = (label, text, types = ['text/plain']) =>
+    const paste = (label, text, html = '') =>
       getEditor(label).trigger('paste', {
-          clipboardData: {
-            types,
-            getData: (type) => (type === 'text/plain' ? text : ''),
-          },
-        })
+        clipboardData: {
+          types: html ? ['text/plain', 'text/html'] : ['text/plain'],
+          getData: (type) =>
+            ({ 'text/plain': text, 'text/html': html })[type] ?? '',
+        },
+      })
 
     it('should link a URL typed before a space', () => {
       addBlock()
@@ -318,16 +319,19 @@ describe('Editor behaviour', () => {
       })
     })
 
-    it('should keep the native paste for rich content', () => {
+    it('should link the URLs written as text in a pasted rich content', () => {
       addBlock()
       focusEditor('HTML One line')
-      cy.get('body').type('Hello')
-      paste('HTML One line', 'see https://example.com', [
-        'text/plain',
-        'text/html',
-      ])
+      paste(
+        'HTML One line',
+        'see https://example.com',
+        '<span style="color:red">see https://example.com</span>'
+      )
       assertValue((v) => {
-        expect(v[0].oneline).to.equal('Hello')
+        const [a] = links(v[0].oneline)
+        expect(a.getAttribute('href')).to.equal('https://example.com')
+        expect(a.rel).to.equal('noopener noreferrer')
+        expect(v[0].oneline).not.to.contain('style')
       })
     })
 
@@ -368,6 +372,116 @@ describe('Editor behaviour', () => {
       cy.get('.ve-link-modal-input').type('javascript:alert(1){enter}')
       cy.get('.ve-link-modal-overlay').should('not.be.visible')
       assertValue((v) => expect(v[0].oneline).to.equal('Site'))
+    })
+  })
+
+  describe('Paste from another content', () => {
+    const getEditor = (label) =>
+      cy.contains('label', label).siblings().first().find('[contenteditable]')
+
+    const paste = (label, text, html) =>
+      getEditor(label).trigger('paste', {
+        clipboardData: {
+          types: ['text/plain', 'text/html'],
+          getData: (type) =>
+            ({ 'text/plain': text, 'text/html': html })[type] ?? '',
+        },
+      })
+
+    const emptyEditor = (label) => {
+      cy.contains('label', label).siblings().first().click()
+      cy.get('body').type('{selectall}{backspace}')
+    }
+
+    // Google Docs puts its whole content in <b style="font-weight:normal">
+    // and its formatting in styled <span>
+    const googleDocs = (content) =>
+      `<meta charset="utf-8"><b style="font-weight:normal;" id="docs-internal-guid-1">${content}</b>`
+    const span = (style, text) =>
+      `<span style="font-size:11pt;font-family:Arial;color:#ff0000;background-color:#ffff00;${style}">${text}</span>`
+
+    it('should drop the style of a Google Docs content and keep its structure', () => {
+      addBlock()
+      emptyEditor('HTML Multiline')
+      paste(
+        'HTML Multiline',
+        'Title\nText bold italic underlined\nItem\nSite',
+        googleDocs(
+          `<h1 dir="ltr" style="margin-top:20pt"><span style="font-size:20pt;font-weight:400">Title</span></h1>` +
+            `<p dir="ltr" style="line-height:1.38">${span('font-weight:400', 'Text ')}${span('font-weight:700', 'bold')} ${span('font-style:italic', 'italic')} ${span('text-decoration:underline', 'underlined')}</p>` +
+            `<br><p style="text-align:center">${span('', 'Centered')}</p>` +
+            `<ul style="padding-inline-start:48px"><li style="list-style-type:disc;color:#000"><p role="presentation">${span('', 'Item')}</p></li></ul>` +
+            `<p><a href="https://example.com" style="text-decoration:none">${span('text-decoration:underline', 'Site')}</a></p>`
+        )
+      )
+      assertValue((v) => {
+        expect(v[0].multiline).to.equal(
+          '<h2>Title</h2>' +
+            '<p style="text-align: left;">Text <strong>bold</strong> <em>italic</em> <u>underlined</u></p>' +
+            '<p style="text-align: center;">Centered</p>' +
+            '<ul><li>Item</li></ul>' +
+            '<p style="text-align: left;"><a href="https://example.com" target="_blank" rel="noopener noreferrer">Site</a></p>'
+        )
+      })
+    })
+
+    it('should drop the scripts, images, events and dangerous links', () => {
+      addBlock()
+      emptyEditor('HTML Multiline')
+      paste(
+        'HTML Multiline',
+        'Click here',
+        '<div class="x"><img src="x" onerror="window.pasted=1"><p onclick="window.pasted=2">Click <a href="javascript:window.pasted=3">here</a></p><script>window.pasted=4</script></div>'
+      )
+      assertValue((v) => {
+        expect(v[0].multiline).to.equal('<p style="text-align: left;">Click here</p>')
+      })
+      cy.window().its('pasted').should('be.undefined')
+    })
+
+    it('should flatten the blocks in a single-line field', () => {
+      addBlock()
+      emptyEditor('HTML One line')
+      paste(
+        'HTML One line',
+        'Title\nSub title',
+        googleDocs(
+          `<h1>${span('font-weight:700', 'Title')}</h1><p>${span('font-style:italic', 'Sub')} title</p>`
+        )
+      )
+      assertValue((v) => {
+        expect(v[0].oneline).to.equal('<strong>Title</strong> <em>Sub</em> title')
+      })
+    })
+
+    it('should not add the browser styles when pasting inside a paragraph', () => {
+      addBlock()
+      emptyEditor('HTML Multiline')
+      cy.get('body').type('Before after{leftarrow}{leftarrow}{leftarrow}{leftarrow}{leftarrow}')
+      paste('HTML Multiline', 'bold ', googleDocs(span('font-weight:700', 'bold') + span('', ' ')))
+      cy.get('body').type('X')
+      assertValue((v) => {
+        expect(v[0].multiline).not.to.contain('<span')
+        expect(v[0].multiline).to.match(/^<p[^>]*>Before(\s|&nbsp;)<strong>bold<\/strong>(\s|&nbsp;)Xafter<\/p>$/)
+      })
+    })
+
+    it('should paste only the text inside a link', () => {
+      addBlock()
+      emptyEditor('HTML One line')
+      getEditor('HTML One line').then(($el) => {
+        $el[0].innerHTML = '<a href="/contact">Contact</a>'
+        const range = document.createRange()
+        range.setStart($el[0].querySelector('a').firstChild, 3)
+        range.collapse(true)
+        const sel = $el[0].ownerDocument.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+      })
+      paste('HTML One line', 'X', '<b style="color:red">X</b>')
+      assertValue((v) => {
+        expect(v[0].oneline).to.equal('<a href="/contact">ConXtact</a>')
+      })
     })
   })
 
